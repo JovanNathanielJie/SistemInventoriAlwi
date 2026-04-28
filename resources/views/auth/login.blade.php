@@ -6,6 +6,17 @@
 
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    {{-- Alert untuk login gagal --}}
+    @if ($errors->has('login_failed'))
+        <div class="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-lg flex items-start gap-3">
+            <div class="text-red-600 text-xl flex-shrink-0 mt-0.5">⚠️</div>
+            <div class="flex-1">
+                <p class="text-red-700 font-semibold">Login Gagal</p>
+                <p class="text-red-600 text-sm mt-1">{{ $errors->first('login_failed') }}</p>
+            </div>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login') }}" class="space-y-4">
         @csrf
 
@@ -39,6 +50,6 @@
     </form>
 
     <div class="mt-6 text-center text-sm text-gray-600">
-        <p>Hubungi administrator untuk membuat akun baru.</p>
+        <p>Hubungi pemilik untuk membuat akun baru.</p>
     </div>
 </x-guest-layout>
