@@ -5,6 +5,7 @@
 @endphp
 
 <div>
+    <!-- SIDEBAR UNTUK MOBILE (Layar Kecil) -->
     <div x-show="sidebarOpen" class="relative z-50 lg:hidden" x-cloak>
         <div class="fixed inset-0 bg-gray-900/80 transition-opacity" x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false"></div>
         <div class="fixed inset-0 flex">
@@ -18,6 +19,10 @@
                 <nav class="flex-1 overflow-y-auto p-3 sm:p-4">
                     <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? $activeClass : $inactiveClass }} {{ $navClass }}">🏠 Dashboard</a>
 
+                    <!-- MENU BARU: TRANSAKSI / KASIR -->
+                    <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase">Transaksi</div>
+                    <a href="{{ route('penjualan.create') }}" class="{{ request()->routeIs('penjualan.create') ? $activeClass : $inactiveClass }} {{ $navClass }}">🛒 Mesin Kasir</a>
+
                     <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase">Database</div>
 
                     <a href="{{ route('kategori.index') }}" class="{{ request()->routeIs('kategori.*') ? $activeClass : $inactiveClass }} {{ $navClass }}">🏷️ Kategori Barang</a>
@@ -30,10 +35,17 @@
                         <a href="{{ route('alokasi-gudang-etalase.index') }}" class="{{ request()->routeIs('alokasi-gudang-etalase.*') ? $activeClass : $inactiveClass }} {{ $navClass }}">🏭 Alokasi Gudang→Etalase</a>
                         <a href="{{ route('mutasi_keluar.create') }}" class="{{ request()->routeIs('mutasi_keluar.*') ? $activeClass : $inactiveClass }} {{ $navClass }}">➖ Barang Keluar</a>
                     @endif
+                    
                     @if(Auth::user()->role === 'Pemilik')
-                        <a href="{{ route('penjualan.index') }}" class="{{ request()->routeIs('penjualan.*') ? $activeClass : $inactiveClass }} {{ $navClass }}">💰 Laporan Penjualan</a>
-                        <a href="{{ route('log.aktivitas') }}" class="{{ request()->routeIs('log.aktivitas') ? $activeClass : $inactiveClass }} {{ $navClass }}">📋 Laporan Log</a>
+                        <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase">Laporan & Riwayat</div>
 
+                        <a href="{{ route('penjualan.index') }}" class="{{ request()->routeIs('penjualan.*') && !request()->routeIs('penjualan.create') ? $activeClass : $inactiveClass }} {{ $navClass }}">💰 Laporan Penjualan</a>
+                        <!-- Menu Baru Laporan PDF -->
+                        <a href="{{ route('laporan.masuk') }}" class="{{ request()->routeIs('laporan.masuk') ? $activeClass : $inactiveClass }} {{ $navClass }}">📄 Laporan Barang Masuk</a>
+                        <a href="{{ route('laporan.keluar') }}" class="{{ request()->routeIs('laporan.keluar') ? $activeClass : $inactiveClass }} {{ $navClass }}">📄 Laporan Barang Keluar</a>
+                        
+                        <a href="{{ route('log.aktivitas') }}" class="{{ request()->routeIs('log.aktivitas') ? $activeClass : $inactiveClass }} {{ $navClass }}">📋 Log Aktivitas</a>
+                    
                         <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase">Admin</div>
 
                         <a href="{{ route('register') }}" class="{{ request()->routeIs('register') ? $activeClass : $inactiveClass }} {{ $navClass }}">👤 Tambah Pengguna</a>
@@ -43,6 +55,8 @@
         </div>
     </div>
 
+
+    <!-- SIDEBAR UNTUK DESKTOP (Layar Besar) -->
     <nav x-show="sidebarOpen" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col border-r border-gray-200 bg-white shadow-sm">
 
         <div @click="sidebarOpen = false" class="flex h-16 shrink-0 items-center border-b border-indigo-700 bg-indigo-600 px-4 sm:px-6 text-white font-bold text-lg sm:text-xl shadow-md cursor-pointer hover:bg-indigo-700 transition gap-3">
@@ -52,6 +66,10 @@
 
         <div class="flex flex-1 flex-col overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
             <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? $activeClass : $inactiveClass }} {{ $navClass }}">🏠 Dashboard</a>
+
+            <!-- MENU BARU: TRANSAKSI / KASIR -->
+            <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[10px] font-bold text-gray-400 uppercase">Transaksi</div>
+            <a href="{{ route('penjualan.create') }}" class="{{ request()->routeIs('penjualan.create') ? $activeClass : $inactiveClass }} {{ $navClass }}">🛒 Mesin Kasir</a>
 
             <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[10px] font-bold text-gray-400 uppercase">Database</div>
 
@@ -67,8 +85,14 @@
             @endif
 
             @if(Auth::user()->role === 'Pemilik')
-                <a href="{{ route('penjualan.index') }}" class="{{ request()->routeIs('penjualan.*') ? $activeClass : $inactiveClass }} {{ $navClass }}">💰 Laporan Penjualan</a>
-                <a href="{{ route('log.aktivitas') }}" class="{{ request()->routeIs('log.aktivitas') ? $activeClass : $inactiveClass }} {{ $navClass }}">📋 Laporan Log</a>
+                <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[10px] font-bold text-gray-400 uppercase">Laporan & Riwayat</div>
+
+                <a href="{{ route('penjualan.index') }}" class="{{ request()->routeIs('penjualan.*') && !request()->routeIs('penjualan.create') ? $activeClass : $inactiveClass }} {{ $navClass }}">💰 Laporan Penjualan</a>
+                <!-- Menu Baru Laporan PDF -->
+                <a href="{{ route('laporan.masuk') }}" class="{{ request()->routeIs('laporan.masuk') ? $activeClass : $inactiveClass }} {{ $navClass }}">📄 Laporan Barang Masuk</a>
+                <a href="{{ route('laporan.keluar') }}" class="{{ request()->routeIs('laporan.keluar') ? $activeClass : $inactiveClass }} {{ $navClass }}">📄 Laporan Barang Keluar</a>
+                
+                <a href="{{ route('log.aktivitas') }}" class="{{ request()->routeIs('log.aktivitas') ? $activeClass : $inactiveClass }} {{ $navClass }}">📋 Log Aktivitas</a>
 
                 <div class="pt-3 sm:pt-4 pb-2 px-3 sm:px-4 text-[10px] font-bold text-gray-400 uppercase">Admin</div>
 
