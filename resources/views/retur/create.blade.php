@@ -1,220 +1,209 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight">{{ __('Input Retur Baru') }}</h2>
+        {{ __('Form Pencatatan Retur Barang') }}
     </x-slot>
 
-    <div class="py-6 sm:py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+
             @if(session('error'))
-                <div class="mb-4 p-3 sm:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-                    {{ session('error') }}
-                </div>
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">{{ session('error') }}</div>
+            @endif
+            @if(session('success'))
+                <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">{{ session('success') }}</div>
             @endif
 
-            <!-- Langkah 1: Pilih Transaksi Penjualan -->
-            <div class="mb-6 bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full font-bold text-sm">1</span>
-                    Pilih Transaksi Penjualan
-                </h3>
-
-                <div class="space-y-3 max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
-                    @forelse($penjualanList as $penjualan)
-                        <label class="flex items-start p-3 hover:bg-blue-50 cursor-pointer transition border-b border-gray-100 last:border-0">
-                            <input type="radio" name="id_penjualan" value="{{ $penjualan->id_penjualan }}" class="mt-1 mr-3 transaction-radio" />
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-start gap-2 mb-1">
-                                    <p class="font-semibold text-gray-800 truncate">{{ $penjualan->kode_transaksi ?? 'N/A' }}</p>
-                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap font-bold">
-                                        Rp {{ number_format($penjualan->total_harga, 0, ',', '.') }}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-gray-600">
-                                    {{ $penjualan->tanggal_penjualan ? \Carbon\Carbon::parse($penjualan->tanggal_penjualan)->format('d M Y H:i') : 'N/A' }} • Kasir: {{ $penjualan->pengguna->username ?? 'Unknown' }}
-                                </p>
-                                @if($penjualan->detail && $penjualan->detail->count() > 0)
-                                    <p class="text-xs text-gray-600 mt-1">
-                                        {{ $penjualan->detail->count() }} item:
-                                        {{ $penjualan->detail->map(fn($d) => $d->makanan->nama_makanan ?? 'Terhapus')->join(', ') }}
-                                    </p>
-                                @endif
-                            </div>
-                        </label>
-                    @empty
-                        <div class="p-6 text-center text-gray-500">
-                            <p>Tidak ada transaksi penjualan.</p>
-                        </div>
-                    @endforelse
+            <form action="{{ route('retur.store') }}" method="POST" id="form-retur">
+                @csrf
+                <div class="mb-6 bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <p class="text-sm font-bold text-orange-700">⚠️ Perhatian Mode Retur!</p>
+                    <ul class="text-xs text-orange-600 mt-2 list-disc list-inside">
+                        <li>Stok barang yang diretur akan dikembalikan otomatis ke <strong>ETALASE</strong>.</li>
+                        <li>Total pendapatan pada Transaksi Penjualan terkait akan <strong>dipotong otomatis</strong>.</li>
+                    </ul>
                 </div>
-            </div>
 
-            <!-- Langkah 2: Pilih Item yang Diretur -->
-            <div class="mb-6 bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm" id="step2-container" style="display: none;">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <span class="inline-flex items-center justify-center w-8 h-8 bg-green-100 text-green-700 rounded-full font-bold text-sm">2</span>
-                    Pilih Item yang Diretur
-                </h3>
+                <div class="mb-4">
+                    <x-input-label for="id_penjualan" value="1. Pilih Kode Transaksi" />
+                    <select id="id_penjualan" name="id_penjualan" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full mt-1" required>
+                        <option value="">-- Pilih Transaksi --</option>
+                        @foreach($penjualan as $trx)
+                            <option value="{{ $trx->id_penjualan }}"
+                                {{ (isset($selected_id) && $selected_id == $trx->id_penjualan) ? 'selected' : '' }}
+                                data-items='@json($trx->detail)'>
+                                {{ $trx->kode_transaksi ?? 'N/A' }} | Tanggal: {{ \Carbon\Carbon::parse($trx->tanggal_penjualan)->format('d M Y') }} | Total: Rp {{ number_format($trx->total_harga, 0, ',', '.') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                <form action="{{ route('retur.store') }}" method="POST" id="retur-form" onsubmit="validateFormBeforeSubmit(event)">
-                    @csrf
-
-                    <input type="hidden" name="id_penjualan" id="form-id_penjualan" />
-
-                    <div id="items-container" class="space-y-4">
-                        <!-- Items akan diisi oleh JavaScript -->
+                <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-inner" id="section-barang" style="display: none;">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-3 gap-3">
+                        <div>
+                            <x-input-label value="2. Cari Barang & Input Jumlah" />
+                            <span class="text-xs text-gray-500 font-medium">(Pilih dan isi jumlah pada salah satu barang)</span>
+                        </div>
+                        <div class="w-full sm:w-1/2 relative">
+                            <input type="text" id="search-makanan" class="pl-9 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full text-sm" placeholder="Ketik nama barang di sini...">
+                        </div>
                     </div>
 
-                    <!-- Button Aksi -->
-                    <div class="mt-6 flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                        <a href="{{ route('retur.index') }}" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition border border-gray-300">
-                            ← Batal
-                        </a>
-                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition" id="submit-btn">
-                            ✅ Simpan Retur
-                        </button>
+                    <div class="border border-gray-200 rounded-md overflow-hidden bg-white shadow-sm">
+                        <div class="bg-gray-100 px-4 py-2 grid grid-cols-12 gap-4 text-sm font-bold text-gray-700 border-b border-gray-200">
+                            <div class="col-span-8">Daftar Belanjaan</div>
+                            <div class="col-span-4 text-center">Jml Retur</div>
+                        </div>
+                        <div id="list-makanan-container" class="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                            </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <input type="hidden" id="id_makanan_hidden" name="id_makanan" required>
+                <input type="hidden" id="jumlah_retur_hidden" name="jumlah_retur" required>
+                <div class="grid grid-cols-1 mb-4">
+                    <div>
+                        <x-input-label for="tgl_retur" value="3. Tanggal Retur" />
+                        <x-text-input id="tgl_retur" class="block w-full mt-1" type="date" name="tgl_retur" value="{{ date('Y-m-d') }}" required />
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <x-input-label for="alasan" value="4. Alasan Retur" />
+                    <textarea id="alasan" name="alasan" rows="3" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full mt-1" placeholder="Contoh: Salah beli, barang cacat dari kasir..." required></textarea>
+                </div>
+
+                <x-primary-button id="btn-submit-retur" class="w-full justify-center py-3 bg-orange-600 hover:bg-orange-700 text-lg">
+                    PROSES RETUR & KEMBALIKAN KE ETALASE
+                </x-primary-button>
+            </form>
         </div>
     </div>
 
     <script>
-        document.querySelectorAll('.transaction-radio').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const id_penjualan = this.value;
-                loadTransactionDetails(id_penjualan);
-            });
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectTrx = document.getElementById('id_penjualan');
+            const sectionBarang = document.getElementById('section-barang');
+            const container = document.getElementById('list-makanan-container');
+            const searchInput = document.getElementById('search-makanan');
 
-        function validateFormBeforeSubmit(event) {
-            event.preventDefault();
-            
-            const id_penjualan = document.getElementById('form-id_penjualan').value;
-            const checkedItems = document.querySelectorAll('.item-checkbox:checked');
-            
-            if (!id_penjualan) {
-                alert('❌ Pilih transaksi penjualan terlebih dahulu!');
-                return false;
-            }
-            
-            if (checkedItems.length === 0) {
-                alert('❌ Pilih minimal satu item untuk diretur!');
-                return false;
-            }
-            
-            // Validate setiap item yang dipilih
-            let valid = true;
-            checkedItems.forEach((checkbox) => {
-                const index = checkbox.value;
-                const jumlahInput = document.querySelector(`input[name="retur_items[${index}][jumlah_retur]"]`);
-                const alasanInput = document.querySelector(`select[name="retur_items[${index}][alasan_retur]"]`);
-                
-                if (!jumlahInput || !jumlahInput.value) {
-                    alert(`❌ Isi jumlah retur untuk item ke-${parseInt(index) + 1}!`);
-                    valid = false;
-                    return;
-                }
-                
-                if (!alasanInput || !alasanInput.value) {
-                    alert(`❌ Pilih alasan retur untuk item ke-${parseInt(index) + 1}!`);
-                    valid = false;
-                    return;
-                }
-            });
-            
-            if (!valid) return false;
-            
-            // Submit form
-            document.getElementById('retur-form').submit();
-        }
+            const hiddenIdMakanan = document.getElementById('id_makanan_hidden');
+            const hiddenJumlah = document.getElementById('jumlah_retur_hidden');
 
-        function loadTransactionDetails(id_penjualan) {
-            // Set form value
-            document.getElementById('form-id_penjualan').value = id_penjualan;
+            let currentItems = [];
 
-            // Fetch data via AJAX
-            fetch(`/retur/get-detail/${id_penjualan}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        renderReturnItems(data.detail);
-                        document.getElementById('step2-container').style.display = 'block';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
+            // Render list UI
+            function renderList(filterText = '') {
+                container.innerHTML = '';
 
-        function renderReturnItems(details) {
-            const container = document.getElementById('items-container');
-            container.innerHTML = '';
-
-            details.forEach((detail, index) => {
-                const makananNama = detail.makanan?.nama_makanan || 'Terhapus';
-                const hargaSatuan = detail.harga_satuan || 0;
-
-                const itemHtml = `
-                    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800">${makananNama}</h4>
-                                <p class="text-sm text-gray-600">
-                                    Harga: Rp ${new Intl.NumberFormat('id-ID').format(hargaSatuan)} |
-                                    Terjual: ${detail.jumlah} pcs
-                                </p>
-                            </div>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="item-checkbox" value="${index}" />
-                                <span class="text-sm text-gray-600">Diretur</span>
-                            </label>
-                        </div>
-
-                        <div class="item-inputs space-y-3" style="display: none;" id="inputs-${index}">
-                            <input type="hidden" name="retur_items[${index}][id_makanan]" value="${detail.id_makanan}" />
-
-                            <div>
-                                <label class="text-sm font-medium text-gray-700">Jumlah Retur (Max: ${detail.jumlah})</label>
-                                <input type="number" name="retur_items[${index}][jumlah_retur]" min="1" max="${detail.jumlah}" value="1" class="mt-1 w-full border border-gray-300 rounded-md shadow-sm px-3 py-2" required />
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-medium text-gray-700">Harga Satuan (Rp) - Tidak Bisa Diubah</label>
-                                <div class="mt-1 w-full border-gray-300 border rounded-md shadow-sm px-3 py-2 bg-gray-100 text-gray-700">
-                                    Rp ${new Intl.NumberFormat('id-ID').format(hargaSatuan)}
-                                </div>
-                                <input type="hidden" name="retur_items[${index}][harga_satuan]" value="${hargaSatuan}" />
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-medium text-gray-700">Alasan Retur *</label>
-                                <select name="retur_items[${index}][alasan_retur]" class="mt-1 w-full border border-gray-300 rounded-md shadow-sm px-3 py-2" required>
-                                    <option value="">-- Pilih Alasan --</option>
-                                    <option value="rusak">Rusak</option>
-                                    <option value="expired">Expired/Kadaluarsa</option>
-                                    <option value="tidak_sesuai">Tidak Sesuai Pesanan</option>
-                                    <option value="salah_kirim">Salah Kirim</option>
-                                    <option value="lainnya">Lainnya</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-medium text-gray-700">Keterangan (Opsional)</label>
-                                <textarea name="retur_items[${index}][keterangan]" class="mt-1 w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm" rows="2" placeholder="Tambahkan catatan jika ada..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                container.innerHTML += itemHtml;
-            });
-
-            // Add event listeners untuk checkbox
-            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    const index = this.value;
-                    const inputsDiv = document.getElementById(`inputs-${index}`);
-                    inputsDiv.style.display = this.checked ? 'block' : 'none';
+                const filtered = currentItems.filter(item => {
+                    const nama = item.makanan ? item.makanan.nama_makanan.toLowerCase() : 'produk terhapus';
+                    return nama.includes(filterText.toLowerCase());
                 });
-            });
-        }
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<div class="p-6 text-center text-gray-500 italic text-sm">Barang tidak ditemukan dalam transaksi ini.</div>';
+                    return;
+                }
+
+                filtered.forEach(item => {
+                    const nama = item.makanan ? item.makanan.nama_makanan : 'Produk Terhapus';
+                    const hargaFmt = new Intl.NumberFormat('id-ID').format(item.harga_satuan);
+
+                    const html = `
+                        <div class="px-4 py-3 grid grid-cols-12 gap-4 items-center hover:bg-indigo-50 transition">
+                            <div class="col-span-8">
+                                <p class="text-sm font-bold text-gray-800">${nama}</p>
+                                <p class="text-xs text-gray-500 mt-1">Harga: Rp ${hargaFmt} | Max Bisa Diretur: <span class="font-bold text-indigo-600">${item.jumlah} pcs</span></p>
+                            </div>
+                            <div class="col-span-4 flex justify-center">
+                                <input type="number"
+                                    class="input-qty border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-20 text-center text-sm"
+                                    data-id="${item.id_makanan}"
+                                    max="${item.jumlah}"
+                                    min="0"
+                                    placeholder="0">
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+
+                // Logic input: Cegah error form ganda, sync ke Hidden Input
+                const inputs = container.querySelectorAll('.input-qty');
+                inputs.forEach(input => {
+                    input.addEventListener('input', function() {
+                        const val = parseInt(this.value);
+                        const max = parseInt(this.getAttribute('max'));
+
+                        // Validasi agar tidak bisa retur melebihi yang dibeli
+                        if (val > max) this.value = max;
+                        if (val < 0) this.value = 0;
+
+                        if (this.value > 0) {
+                            // Kosongkan form barang lain agar Controller tidak bingung
+                            inputs.forEach(other => {
+                                if (other !== this) other.value = '';
+                            });
+                            // Masukkan data ke input yang sesungguhnya
+                            hiddenIdMakanan.value = this.getAttribute('data-id');
+                            hiddenJumlah.value = this.value;
+                        } else {
+                            hiddenIdMakanan.value = '';
+                            hiddenJumlah.value = '';
+                        }
+                    });
+                });
+            }
+
+            // Memicu Update List Saat Kode Transaksi Terpilih
+            function updateMakanan() {
+                const selectedOption = selectTrx.options[selectTrx.selectedIndex];
+                hiddenIdMakanan.value = '';
+                hiddenJumlah.value = '';
+                searchInput.value = '';
+
+                if (!selectedOption || !selectedOption.value) {
+                    sectionBarang.style.display = 'none';
+                    currentItems = [];
+                    return;
+                }
+
+                sectionBarang.style.display = 'block';
+                currentItems = JSON.parse(selectedOption.getAttribute('data-items') || '[]');
+                renderList();
+            }
+
+            // Jalankan fungsi saat halaman load (Misal jika user me-klik dari laporan)
+            if(selectTrx.value) updateMakanan();
+
+            // Interaksi manual user
+            selectTrx.addEventListener('change', updateMakanan);
+            searchInput.addEventListener('input', (e) => renderList(e.target.value));
+
+            // Logic Submit & Cegah Spam Klik
+            const form = document.getElementById('form-retur');
+            let isSubmitting = false;
+
+            if(form) {
+                form.addEventListener('submit', function(e) {
+                    if (!hiddenIdMakanan.value || !hiddenJumlah.value) {
+                        e.preventDefault();
+                        alert('Silakan isi angka pada kolom Jml Retur di salah satu barang!');
+                        return false;
+                    }
+
+                    if (isSubmitting) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                    isSubmitting = true;
+                    const btn = document.getElementById('btn-submit-retur');
+                    btn.innerHTML = 'MEMPROSES... ⏳';
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    setTimeout(() => { btn.disabled = true; }, 10);
+                });
+            }
+        });
     </script>
 </x-app-layout>
